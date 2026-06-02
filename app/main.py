@@ -805,7 +805,9 @@ class SystemTrayApp:
         """Simulate Ctrl+C to copy the current selection to clipboard.
 
         Uses pynput keyboard controller to send the keystroke to the
-        active application (Word, Notepad, etc.).
+        active application (Word, Notepad, OpenOffice, etc.).
+        Includes longer delays for apps like OpenOffice that are slower
+        to respond to copy commands.
         """
         try:
             from pynput.keyboard import Key, Controller
@@ -817,13 +819,13 @@ class SystemTrayApp:
                     kb.release(key)
                 except Exception:
                     pass
-            # Wait for keys to fully release before sending Ctrl+C
-            time.sleep(0.2)
+            # Wait for keys to fully release
+            time.sleep(0.3)
             # Send Ctrl+C
             with kb.pressed(Key.ctrl_l):
                 kb.tap('c')
-            # Wait for clipboard to update
-            time.sleep(0.1)
+            # Wait for clipboard to update (longer for apps like OpenOffice)
+            time.sleep(0.3)
         except Exception as e:
             logger.debug(f"Simulate copy failed: {e}")
 

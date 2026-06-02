@@ -9,23 +9,8 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from typing import Optional
 
+from .theme import COLORS, FONTS, DEVELOPER
 
-# --- Color Palette (matches review_window.py) ---------------------------------
-
-COLORS = {
-    "bg": "#1e1e2e",
-    "surface": "#2a2a3c",
-    "surface_hover": "#33334a",
-    "text": "#e4e4e7",
-    "text_dim": "#9ca3af",
-    "accent": "#8b5cf6",
-    "success": "#34d399",
-    "error": "#f87171",
-    "border": "#3f3f5a",
-    "btn_primary": "#7c3aed",
-    "btn_hover": "#6d28d9",
-    "btn_cancel": "#4b5563",
-}
 
 
 def _find_env_path() -> str:
