@@ -200,6 +200,34 @@ To rebuild after code changes:
 python build_exe.py
 ```
 
+### Sharing with Others
+
+To share the app with someone else, give them:
+
+```
+AutoCorrect/
+  AutoCorrect.exe
+  .env
+```
+
+**What they need to do:**
+1. Get a free Groq API key from https://console.groq.com/keys
+2. Create a `.env` file next to the `.exe` with:
+   ```env
+   LLM_BACKEND=openai
+   OPENAI_API_KEY=gsk_their_key_here
+   OPENAI_BASE_URL=https://api.groq.com/openai/v1
+   OPENAI_MODEL=llama-3.3-70b-versatile
+   HOTKEY_ANALYZE=ctrl+alt+c
+   HOTKEY_REVIEW=ctrl+alt+v
+   ```
+3. Double-click `AutoCorrect.exe` — no Python, no containers needed
+
+**Requirements for the recipient:**
+- Windows 10/11
+- Internet connection (for Groq API)
+- That's it
+
 ## Troubleshooting
 
 | Issue | Solution |
