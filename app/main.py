@@ -556,6 +556,7 @@ class SystemTrayApp:
         api_key: str = DEFAULT_API_KEY,
         analyze_hotkey: str = "ctrl+alt+c",
         apply_hotkey: str = "ctrl+alt+a",
+        review_hotkey: str = "ctrl+alt+r",
         clipboard_monitoring: bool = False,
     ):
         """Initialize the system tray application."""
@@ -575,6 +576,9 @@ class SystemTrayApp:
         )
         self._hotkey_manager.register(
             apply_hotkey, "analyze_and_apply", self._on_apply_hotkey
+        )
+        self._hotkey_manager.register(
+            review_hotkey, "review", self._on_review_hotkey
         )
 
         # Enable clipboard monitoring if configured
@@ -626,7 +630,10 @@ class SystemTrayApp:
             if self._hotkey_manager.hotkeys_available:
                 self._notification_manager.notify_info(
                     "Auto-Correction Tool Ready",
-                    "Hotkeys active: Ctrl+Alt+C (analyze), Ctrl+Alt+A (auto-apply)"
+                    "Hotkeys active:\n"
+                    "• Ctrl+Alt+C (auto-correct)\n"
+                    "• Ctrl+Alt+A (auto-apply)\n"
+                    "• Ctrl+Alt+R (review before applying)"
                 )
 
             logger.info("System tray application started")
@@ -650,14 +657,17 @@ class SystemTrayApp:
         if self._hotkey_manager.hotkeys_available:
             self._notification_manager.notify_info(
                 "Auto-Correction Tool Ready (Headless)",
-                "Hotkeys active: Ctrl+Alt+C (analyze), Ctrl+Alt+A (auto-apply)"
+                "Hotkeys active:\n"
+                "• Ctrl+Alt+C (auto-correct)\n"
+                "• Ctrl+Alt+A (auto-apply)\n"
+                "• Ctrl+Alt+R (review before applying)"
             )
 
         logger.info("Running in headless mode (no system tray)")
         print(
             "Auto-Correction Tool running. "
-            "Press Ctrl+Alt+C to analyze, Ctrl+Alt+A to auto-apply. "
-            "Press Ctrl+C to quit.",
+            "Press Ctrl+Alt+C to analyze, Ctrl+Alt+A to auto-apply, "
+            "Ctrl+Alt+R to review. Press Ctrl+C to quit.",
             file=sys.stderr,
         )
         try:
@@ -754,16 +764,42 @@ class SystemTrayApp:
     def _tray_open_history(self, icon, item):
         """Handle 'Open History' menu click."""
         logger.info("Open History requested")
-        self._notification_manager.notify_info(
-            "History", "Correction history feature coming soon."
-        )
+        try:
+            from .history import get_history
+            records = get_history(limit=10)
+            if not records:
+                self._notification_manager.notify_info(
+                    "History", "No correction history yet."
+                )
+            else:
+                summary_lines = [f"Last {len(records)} correction(s):"]
+                for r in records[:5]:
+                    ts = r["timestamp"][:16].replace("T", " ")
+                    n_corr = len(r["corrections"])
+                    preview = r["original_text"][:40]
+                    summary_lines.append(f"\u2022 [{ts}] {n_corr} fix(es): {preview}...")
+                self._notification_manager.notify_info(
+                    "Correction History", "\n".join(summary_lines)
+                )
+        except Exception as e:
+            logger.error(f"History error: {e}")
+            self._notification_manager.notify_info(
+                "History", f"Error loading history: {e}"
+            )
 
     def _tray_open_settings(self, icon, item):
-        """Handle 'Settings' menu click."""
+        """Handle 'Settings' menu click — opens the settings GUI."""
         logger.info("Settings requested")
-        self._notification_manager.notify_info(
-            "Settings", "Edit config/settings.yaml to change settings."
-        )
+        threading.Thread(target=self._show_settings_window, daemon=True).start()
+
+    def _show_settings_window(self) -> None:
+        """Open the settings window (runs in its own thread for tkinter)."""
+        try:
+            from .settings_window import show_settings
+            show_settings()
+        except Exception as e:
+            logger.error(f"Settings window error: {e}")
+            self._notification_manager.notify_error(f"Cannot open settings: {e}")
 
     def _tray_quit(self, icon, item):
         """Handle 'Quit' menu click."""
@@ -782,6 +818,10 @@ class SystemTrayApp:
     def _on_clipboard_text(self, text: str) -> None:
         """Handle new clipboard text detected."""
         self._run_correction(auto_apply=False, text=text)
+
+    def _on_review_hotkey(self) -> None:
+        """Handle review hotkey press (Ctrl+Alt+R) — correction with review popup."""
+        self._run_correction(auto_apply=False, with_review=True)
 
     def _simulate_copy(self) -> None:
         """Simulate Ctrl+C to copy the current selection to clipboard.
@@ -805,13 +845,97 @@ class SystemTrayApp:
         except Exception as e:
             logger.debug(f"Simulate copy failed: {e}")
 
+    @staticmethod
+    def _split_into_chunks(text: str, max_chunk_size: int = 1500) -> list[str]:
+        """Split text into chunks on sentence boundaries.
+
+        If text is <= 2000 chars, returns it as-is in a single-element list.
+        Otherwise splits on sentence-ending punctuation (. ! ? newline) into
+        chunks of approximately max_chunk_size characters.
+        """
+        if len(text) <= 2000:
+            return [text]
+
+        chunks = []
+        current_chunk = ""
+
+        # Split on sentence boundaries: periods, exclamation, question marks, newlines
+        import re
+        sentences = re.split(r'(?<=[.!?\n])\s+', text)
+
+        for sentence in sentences:
+            if len(current_chunk) + len(sentence) + 1 > max_chunk_size and current_chunk:
+                chunks.append(current_chunk.strip())
+                current_chunk = sentence
+            else:
+                current_chunk = current_chunk + " " + sentence if current_chunk else sentence
+
+        if current_chunk.strip():
+            chunks.append(current_chunk.strip())
+
+        return chunks if chunks else [text]
+
+    def _call_llm(self, text: str, api_key: str, base_url: str, model: str) -> Optional[dict]:
+        """Make a single LLM API call for text correction.
+
+        Args:
+            text: The text chunk to analyze.
+            api_key: The API key.
+            base_url: The API base URL.
+            model: The model name.
+
+        Returns:
+            Dict with "corrections" list, or None on failure.
+        """
+        import json as json_mod
+
+        prompt = (
+            "You are a precise text correction assistant. "
+            "Find all spelling, grammar, and punctuation errors. "
+            "Return a JSON object with a \"corrections\" array. "
+            "Each correction: {\"original_text\": \"...\", \"suggested_text\": \"...\", "
+            "\"correction_type\": \"spelling|grammar|punctuation\", "
+            "\"reason\": \"...\", \"confidence\": 0.9, "
+            "\"start_offset\": 0, \"end_offset\": 5}. "
+            "If no errors, return {\"corrections\": []}.\n\n"
+            f"Text to correct:\n\"{text}\""
+        )
+
+        payload = {
+            "model": model,
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": 0.3,
+            "response_format": {"type": "json_object"},
+        }
+
+        with httpx.Client(timeout=60.0) as client:
+            response = client.post(
+                f"{base_url}/chat/completions",
+                json=payload,
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json",
+                },
+            )
+
+        if response.status_code == 200:
+            data = response.json()
+            content = data.get("choices", [{}])[0].get("message", {}).get("content", "{}")
+            parsed = json_mod.loads(content)
+            corrections = parsed.get("corrections", [])
+            return {"corrections": corrections}
+        else:
+            logger.error(f"LLM request failed: {response.status_code} - {response.text}")
+            return None
+
     def _analyze_text(self, text: str) -> Optional[dict]:
         """Analyze text using Groq directly (if configured) or the local API.
 
-        Calls Groq from the host machine to avoid container network issues.
-        Falls back to the local API gateway if Groq is not configured.
+        Features:
+        - Text chunking: splits text >2000 chars into ~1500 char chunks
+        - Gemini fallback: retries with Gemini if Groq fails
+        - Falls back to the local API gateway if cloud is not configured
         """
-        import json as json_mod
         import os
 
         # Load config
@@ -826,58 +950,76 @@ class SystemTrayApp:
             if not api_key:
                 return self._api_client.analyze_text(text)
 
-            # Call Groq directly from host
-            try:
-                prompt = (
-                    "You are a precise text correction assistant. "
-                    "Find all spelling, grammar, and punctuation errors. "
-                    "Return a JSON object with a \"corrections\" array. "
-                    "Each correction: {\"original_text\": \"...\", \"suggested_text\": \"...\", "
-                    "\"correction_type\": \"spelling|grammar|punctuation\", "
-                    "\"reason\": \"...\", \"confidence\": 0.9, "
-                    "\"start_offset\": 0, \"end_offset\": 5}. "
-                    "If no errors, return {\"corrections\": []}.\n\n"
-                    f"Text to correct:\n\"{text}\""
-                )
+            # Split into chunks if text is long
+            chunks = self._split_into_chunks(text)
+            all_corrections = []
 
-                payload = {
-                    "model": model,
-                    "messages": [{"role": "user", "content": prompt}],
-                    "temperature": 0.3,
-                    "response_format": {"type": "json_object"},
-                }
+            for chunk in chunks:
+                # Try primary backend (Groq)
+                try:
+                    result = self._call_llm(chunk, api_key, base_url, model)
+                    if result is not None:
+                        all_corrections.extend(result.get("corrections", []))
+                        continue
+                except Exception as e:
+                    logger.warning(f"Groq call failed for chunk: {e}")
 
-                with httpx.Client(timeout=60.0) as client:
-                    response = client.post(
-                        f"{base_url}/chat/completions",
-                        json=payload,
-                        headers={
-                            "Authorization": f"Bearer {api_key}",
-                            "Content-Type": "application/json",
-                        },
-                    )
+                # Fallback to Gemini
+                gemini_key = os.environ.get("GEMINI_API_KEY", env_file.get("GEMINI_API_KEY", ""))
+                if gemini_key:
+                    logger.info("Falling back to Gemini...")
+                    try:
+                        gemini_url = "https://generativelanguage.googleapis.com/v1beta/openai"
+                        gemini_model = "gemini-2.0-flash-lite"
+                        result = self._call_llm(chunk, gemini_key, gemini_url, gemini_model)
+                        if result is not None:
+                            all_corrections.extend(result.get("corrections", []))
+                            continue
+                    except Exception as e2:
+                        logger.error(f"Gemini fallback also failed: {e2}")
 
-                if response.status_code == 200:
-                    data = response.json()
-                    content = data.get("choices", [{}])[0].get("message", {}).get("content", "{}")
-                    parsed = json_mod.loads(content)
-                    corrections = parsed.get("corrections", [])
-                    return {"corrections": corrections}
-                else:
-                    logger.error(f"Groq request failed: {response.status_code} - {response.text}")
-                    return None
+                # Both failed for this chunk
+                logger.error("All LLM backends failed for chunk")
 
-            except Exception as e:
-                logger.error(f"Groq direct call error: {e}")
-                return None
+            return {"corrections": all_corrections}
+
+        elif backend == "gemini":
+            # Direct Gemini usage
+            gemini_key = os.environ.get("GEMINI_API_KEY", env_file.get("GEMINI_API_KEY", ""))
+            if not gemini_key:
+                return self._api_client.analyze_text(text)
+
+            gemini_url = "https://generativelanguage.googleapis.com/v1beta/openai"
+            gemini_model = "gemini-2.0-flash-lite"
+
+            chunks = self._split_into_chunks(text)
+            all_corrections = []
+
+            for chunk in chunks:
+                try:
+                    result = self._call_llm(chunk, gemini_key, gemini_url, gemini_model)
+                    if result is not None:
+                        all_corrections.extend(result.get("corrections", []))
+                except Exception as e:
+                    logger.error(f"Gemini call failed for chunk: {e}")
+
+            return {"corrections": all_corrections}
+
         else:
-            # Use local API gateway
+            # Use local API gateway (ollama or other)
             return self._api_client.analyze_text(text)
 
     def _run_correction(
-        self, auto_apply: bool = False, text: Optional[str] = None
+        self, auto_apply: bool = False, text: Optional[str] = None,
+        with_review: bool = False,
     ) -> None:
-        """Run the correction flow."""
+        """Run the correction flow.
+
+        Args:
+            auto_apply: Whether to auto-apply corrections (legacy, kept for compatibility).
+            text: Text to correct. If None, copies current selection.
+            with_review: If True, shows the review window before applying.
+        """
         self._update_status(AppStatus.PROCESSING)
 
         try:
@@ -933,21 +1075,60 @@ class SystemTrayApp:
                 self._update_status(AppStatus.IDLE)
                 return
 
+            # If review mode, show the review window
+            if with_review:
+                try:
+                    from .review_window import show_review
+                    selected = show_review(text, applicable)
+                    if selected is None:
+                        # User cancelled
+                        self._notification_manager.notify_info(
+                            "Cancelled", "Correction review cancelled."
+                        )
+                        self._update_status(AppStatus.IDLE)
+                        return
+                    applicable = selected
+                except Exception as e:
+                    logger.error(f"Review window error: {e}")
+                    # Fall through to auto-apply if review fails
+
+            if not applicable:
+                self._notification_manager.notify_info(
+                    "No Corrections", "No corrections were selected."
+                )
+                self._update_status(AppStatus.IDLE)
+                return
+
             # Build corrected text using find-and-replace (more reliable than offsets)
             # LLM offsets are often wrong, so we search for the original text instead
             corrected = text
             applied_count = 0
+            applied_details = []
             for c in applicable:
                 original = c.get("original_text", "")
                 suggested = c.get("suggested_text", "")
                 if original in corrected:
                     corrected = corrected.replace(original, suggested, 1)
                     applied_count += 1
+                    applied_details.append((original, suggested))
 
             # Put corrected text on clipboard
             self._clipboard_monitor.mark_self_originated(corrected)
             write_clipboard(corrected)
-            self._notification_manager.notify_auto_applied(applied_count)
+
+            # Better notification: show what was corrected
+            self._notify_corrections_detailed(applied_count, applied_details)
+
+            # Save to history
+            try:
+                from .history import save_correction
+                save_correction(
+                    original_text=text,
+                    corrected_text=corrected,
+                    corrections=applicable,
+                )
+            except Exception as e:
+                logger.debug(f"Failed to save to history: {e}")
 
             self._update_status(AppStatus.IDLE)
 
@@ -955,6 +1136,31 @@ class SystemTrayApp:
             logger.error(f"Correction flow error: {e}")
             self._notification_manager.notify_error(f"Error: {e}")
             self._update_status(AppStatus.ERROR)
+
+    def _notify_corrections_detailed(
+        self, count: int, details: list[tuple[str, str]]
+    ) -> None:
+        """Show a detailed notification of corrections applied.
+
+        Shows the first 3 corrections as bullet points.
+        """
+        if count == 0:
+            self._notification_manager.notify_corrections_found(0)
+            return
+
+        lines = [f"Applied {count} correction(s):"]
+        for original, suggested in details[:3]:
+            # Truncate long strings for notification
+            orig_short = original[:30] + "..." if len(original) > 30 else original
+            sugg_short = suggested[:30] + "..." if len(suggested) > 30 else suggested
+            lines.append(f"\u2022 {orig_short} \u2192 {sugg_short}")
+
+        if count > 3:
+            lines.append(f"  ...and {count - 3} more")
+
+        lines.append("\nPaste (Ctrl+V) to replace your text.")
+        body = "\n".join(lines)
+        self._notification_manager._send_notification("Corrections Applied", body)
 
 
 # ─── Entry Point ──────────────────────────────────────────────────────────────
@@ -1005,6 +1211,7 @@ def main():
         api_key=get_config("API_KEY", DEFAULT_API_KEY),
         analyze_hotkey=get_config("HOTKEY_ANALYZE", "ctrl+alt+c"),
         apply_hotkey=get_config("HOTKEY_APPLY", "ctrl+alt+a"),
+        review_hotkey=get_config("HOTKEY_REVIEW", "ctrl+alt+r"),
         clipboard_monitoring=get_config("CLIPBOARD_MONITORING", "false").lower()
         == "true",
     )

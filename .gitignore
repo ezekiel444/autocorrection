@@ -21,9 +21,6 @@ Thumbs.db
 *.db
 *.sqlite
 
-# Test files
-test_*.py
-
 # Build
 dist/
 build/
