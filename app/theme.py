@@ -30,6 +30,7 @@ COLORS = {
     # Buttons
     "btn_primary": "#7aa2f7",    # Primary button (blue)
     "btn_primary_hover": "#89b4fa",
+    "btn_hover": "#89b4fa",      # Alias for backward compat
     "btn_secondary": "#3b4261",  # Secondary button
     "btn_danger": "#f7768e",     # Danger button
     "btn_cancel": "#414868",     # Cancel/neutral
@@ -38,16 +39,16 @@ COLORS = {
 # ─── Typography ───────────────────────────────────────────────────────────────
 
 FONTS = {
-    "heading": ("Segoe UI", 15, "bold"),
-    "subheading": ("Segoe UI", 12, "bold"),
-    "body": ("Segoe UI", 10),
-    "body_bold": ("Segoe UI", 10, "bold"),
-    "small": ("Segoe UI", 9),
-    "code": ("Cascadia Code", 10),       # Falls back to Consolas
-    "code_bold": ("Cascadia Code", 10, "bold"),
-    "credit": ("Segoe UI", 8),
+    "heading": ("Segoe UI", 16, "bold"),
+    "subheading": ("Segoe UI", 13, "bold"),
+    "body": ("Segoe UI", 11),
+    "body_bold": ("Segoe UI", 11, "bold"),
+    "small": ("Segoe UI", 10),
+    "code": ("Consolas", 12),
+    "code_bold": ("Consolas", 12, "bold"),
+    "credit": ("Segoe UI", 9),
 }
 
 # ─── Developer Info ───────────────────────────────────────────────────────────
 
-DEVELOPER = "Developed by Ezekiel Matomi Lucky"
+DEVELOPER = "Ezekiel Matomi Lucky"

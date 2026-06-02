@@ -555,7 +555,7 @@ class SystemTrayApp:
         api_url: str = API_GATEWAY_URL,
         api_key: str = DEFAULT_API_KEY,
         analyze_hotkey: str = "ctrl+alt+c",
-        review_hotkey: str = "ctrl+alt+r",
+        review_hotkey: str = "ctrl+shift+r",
         clipboard_monitoring: bool = False,
     ):
         """Initialize the system tray application."""
@@ -628,7 +628,7 @@ class SystemTrayApp:
                     "Auto-Correction Tool Ready",
                     "Hotkeys active:\n"
                     "• Ctrl+Alt+C (auto-correct)\n"
-                    "• Ctrl+Alt+R (review before applying)"
+                    "• Ctrl+Shift+R (review before applying)"
                 )
 
             logger.info("System tray application started")
@@ -654,14 +654,14 @@ class SystemTrayApp:
                 "Auto-Correction Tool Ready (Headless)",
                 "Hotkeys active:\n"
                 "• Ctrl+Alt+C (auto-correct)\n"
-                "• Ctrl+Alt+R (review before applying)"
+                "• Ctrl+Shift+R (review before applying)"
             )
 
         logger.info("Running in headless mode (no system tray)")
         print(
             "Auto-Correction Tool running. "
             "Press Ctrl+Alt+C to correct, "
-            "Ctrl+Alt+R to review. Press Ctrl+C to quit.",
+            "Ctrl+Shift+R to review. Press Ctrl+C to quit.",
             file=sys.stderr,
         )
         try:
@@ -761,10 +761,16 @@ class SystemTrayApp:
         threading.Thread(target=self._show_history_window, daemon=True).start()
 
     def _show_history_window(self) -> None:
-        """Open the history window."""
+        """Open the history window in a subprocess (avoids tkinter thread issues)."""
         try:
-            from .history_window import show_history
-            show_history()
+            import os
+            import subprocess as sp
+            project_root = os.path.dirname(os.path.dirname(__file__))
+            sp.Popen(
+                [sys.executable, "-c",
+                 "from app.history_window import show_history; show_history()"],
+                cwd=project_root,
+            )
         except Exception as e:
             logger.error(f"History window error: {e}")
             self._notification_manager.notify_error(f"Cannot open history: {e}")
@@ -775,10 +781,16 @@ class SystemTrayApp:
         threading.Thread(target=self._show_settings_window, daemon=True).start()
 
     def _show_settings_window(self) -> None:
-        """Open the settings window (runs in its own thread for tkinter)."""
+        """Open the settings window in a subprocess (avoids tkinter thread issues)."""
         try:
-            from .settings_window import show_settings
-            show_settings()
+            import os
+            import subprocess as sp
+            project_root = os.path.dirname(os.path.dirname(__file__))
+            sp.Popen(
+                [sys.executable, "-c",
+                 "from app.settings_window import show_settings; show_settings()"],
+                cwd=project_root,
+            )
         except Exception as e:
             logger.error(f"Settings window error: {e}")
             self._notification_manager.notify_error(f"Cannot open settings: {e}")
@@ -798,7 +810,7 @@ class SystemTrayApp:
         self._run_correction(auto_apply=False, text=text)
 
     def _on_review_hotkey(self) -> None:
-        """Handle review hotkey press (Ctrl+Alt+R) — correction with review popup."""
+        """Handle review hotkey press (Ctrl+Shift+R) — correction with review popup."""
         self._run_correction(auto_apply=False, with_review=True)
 
     def _simulate_copy(self) -> None:
@@ -1194,7 +1206,7 @@ def main():
         api_url=api_url,
         api_key=get_config("API_KEY", DEFAULT_API_KEY),
         analyze_hotkey=get_config("HOTKEY_ANALYZE", "ctrl+alt+c"),
-        review_hotkey=get_config("HOTKEY_REVIEW", "ctrl+alt+r"),
+        review_hotkey=get_config("HOTKEY_REVIEW", "ctrl+shift+r"),
         clipboard_monitoring=get_config("CLIPBOARD_MONITORING", "false").lower()
         == "true",
     )

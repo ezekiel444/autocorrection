@@ -136,7 +136,7 @@ class HistoryWindow:
         # ─── Developer credit ────────────────────────────────────────────
         credit = tk.Label(
             window,
-            text="Developed by Ezekiel Matomi Lucky",
+            text="Ezekiel Matomi Lucky",
             font=("Segoe UI", 8),
             bg=COLORS["bg"],
             fg="#6b7280",
