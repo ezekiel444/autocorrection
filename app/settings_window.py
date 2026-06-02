@@ -291,7 +291,7 @@ class SettingsWindow:
         ).grid(row=row, column=0, sticky="w", pady=5)
 
         self._hotkey_review_var = tk.StringVar(
-            value=self._env_vars.get("HOTKEY_REVIEW", "ctrl+shift+space")
+            value=self._env_vars.get("HOTKEY_REVIEW", "ctrl+f7")
         )
         tk.Entry(
             main_frame,
