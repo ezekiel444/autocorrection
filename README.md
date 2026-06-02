@@ -175,6 +175,31 @@ ruff check .
 ruff format .
 ```
 
+## Building the Desktop App (.exe)
+
+Build a standalone Windows executable — no Python installation needed to run it:
+
+```bash
+# Install PyInstaller (one-time)
+pip install pyinstaller
+
+# Build the .exe
+python build_exe.py
+```
+
+The output is `dist/AutoCorrect.exe` (~24 MB). To use it:
+
+1. Copy `dist/AutoCorrect.exe` to any folder (e.g., your Desktop)
+2. Copy your `.env` file to the same folder
+3. Double-click `AutoCorrect.exe` — it runs silently with a tray icon
+
+No terminal window, no Python needed. Share the `.exe` + `.env` with anyone.
+
+To rebuild after code changes:
+```bash
+python build_exe.py
+```
+
 ## Troubleshooting
 
 | Issue | Solution |
