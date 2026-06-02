@@ -11,9 +11,9 @@ args = [
     "--name=AutoCorrect",
     "--onefile",
     "--windowed",  # No console window
-    "--add-data", f"{os.path.join(project_root, 'app')}:app",
-    "--add-data", f"{os.path.join(project_root, '.env')}:.",
-    "--add-data", f"{os.path.join(project_root, 'config')}:config",
+    "--add-data", f"{os.path.join(project_root, 'app')}{os.pathsep}app",
+    "--add-data", f"{os.path.join(project_root, 'assets')}{os.pathsep}assets",
+    "--add-data", f"{os.path.join(project_root, 'config')}{os.pathsep}config",
     "--hidden-import=app",
     "--hidden-import=app.main",
     "--hidden-import=app.text_capture",

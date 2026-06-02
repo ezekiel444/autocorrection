@@ -702,21 +702,39 @@ class SystemTrayApp:
         Loads the custom logo from assets/tray_icon.png if available,
         otherwise falls back to a generated colored circle.
         Resizes to 64x64 for the system tray.
+        Works both in development and when bundled with PyInstaller.
         """
         import os
         from PIL import Image, ImageDraw
 
         size = 64
 
-        # Try to load custom logo
-        logo_path = os.path.join(
-            os.path.dirname(os.path.dirname(__file__)), "assets", "tray_icon.png"
-        )
-        if not os.path.exists(logo_path):
-            # Also try .ico format
-            logo_path = os.path.join(
-                os.path.dirname(os.path.dirname(__file__)), "assets", "tray_icon.ico"
-            )
+        # Determine base path (handles PyInstaller bundled exe)
+        if getattr(sys, 'frozen', False):
+            # Running as bundled exe
+            base_dir = os.path.dirname(sys.executable)
+        else:
+            # Running from source
+            base_dir = os.path.dirname(os.path.dirname(__file__))
+
+        # Try to load custom logo from multiple locations
+        search_paths = [
+            os.path.join(base_dir, "assets", "tray_icon.png"),
+            os.path.join(base_dir, "assets", "tray_icon.ico"),
+            os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "tray_icon.png"),
+            os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "tray_icon.ico"),
+        ]
+
+        # Also check PyInstaller's _MEIPASS temp directory
+        if hasattr(sys, '_MEIPASS'):
+            search_paths.insert(0, os.path.join(sys._MEIPASS, "assets", "tray_icon.png"))
+            search_paths.insert(1, os.path.join(sys._MEIPASS, "assets", "tray_icon.ico"))
+
+        logo_path = None
+        for path in search_paths:
+            if os.path.exists(path):
+                logo_path = path
+                break
 
         if os.path.exists(logo_path):
             try:
@@ -775,16 +793,22 @@ class SystemTrayApp:
         threading.Thread(target=self._show_history_window, daemon=True).start()
 
     def _show_history_window(self) -> None:
-        """Open the history window in a subprocess (avoids tkinter thread issues)."""
+        """Open the history window."""
         try:
-            import os
-            import subprocess as sp
-            project_root = os.path.dirname(os.path.dirname(__file__))
-            sp.Popen(
-                [sys.executable, "-c",
-                 "from app.history_window import show_history; show_history()"],
-                cwd=project_root,
-            )
+            if getattr(sys, 'frozen', False):
+                # Running as .exe — run tkinter in this thread directly
+                from .history_window import show_history
+                show_history()
+            else:
+                # Running from source — use subprocess to avoid tkinter thread issues
+                import os
+                import subprocess as sp
+                project_root = os.path.dirname(os.path.dirname(__file__))
+                sp.Popen(
+                    [sys.executable, "-c",
+                     "from app.history_window import show_history; show_history()"],
+                    cwd=project_root,
+                )
         except Exception as e:
             logger.error(f"History window error: {e}")
             self._notification_manager.notify_error(f"Cannot open history: {e}")
@@ -795,16 +819,22 @@ class SystemTrayApp:
         threading.Thread(target=self._show_settings_window, daemon=True).start()
 
     def _show_settings_window(self) -> None:
-        """Open the settings window in a subprocess (avoids tkinter thread issues)."""
+        """Open the settings window."""
         try:
-            import os
-            import subprocess as sp
-            project_root = os.path.dirname(os.path.dirname(__file__))
-            sp.Popen(
-                [sys.executable, "-c",
-                 "from app.settings_window import show_settings; show_settings()"],
-                cwd=project_root,
-            )
+            if getattr(sys, 'frozen', False):
+                # Running as .exe — run tkinter in this thread directly
+                from .settings_window import show_settings
+                show_settings()
+            else:
+                # Running from source — use subprocess to avoid tkinter thread issues
+                import os
+                import subprocess as sp
+                project_root = os.path.dirname(os.path.dirname(__file__))
+                sp.Popen(
+                    [sys.executable, "-c",
+                     "from app.settings_window import show_settings; show_settings()"],
+                    cwd=project_root,
+                )
         except Exception as e:
             logger.error(f"Settings window error: {e}")
             self._notification_manager.notify_error(f"Cannot open settings: {e}")
@@ -1177,15 +1207,38 @@ class SystemTrayApp:
 
 
 def _load_env_file() -> dict[str, str]:
-    """Load environment variables from .env file in the project root."""
+    """Load environment variables from .env file.
+
+    Searches in multiple locations to work both in development
+    and when bundled as a PyInstaller .exe.
+    """
     import os
     env_vars = {}
-    # Look for .env in the project root (parent of app/)
-    env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")
-    if not os.path.exists(env_path):
-        # Also try current working directory
-        env_path = os.path.join(os.getcwd(), ".env")
-    if os.path.exists(env_path):
+
+    # Search locations in priority order
+    search_paths = []
+
+    # 1. Next to the .exe (for bundled distribution)
+    if getattr(sys, 'frozen', False):
+        search_paths.append(os.path.join(os.path.dirname(sys.executable), ".env"))
+
+    # 2. Project root (parent of app/)
+    search_paths.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env"))
+
+    # 3. Current working directory
+    search_paths.append(os.path.join(os.getcwd(), ".env"))
+
+    # 4. PyInstaller temp directory
+    if hasattr(sys, '_MEIPASS'):
+        search_paths.append(os.path.join(sys._MEIPASS, ".env"))
+
+    env_path = None
+    for path in search_paths:
+        if os.path.exists(path):
+            env_path = path
+            break
+
+    if env_path:
         with open(env_path, "r", encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
