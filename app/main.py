@@ -555,7 +555,6 @@ class SystemTrayApp:
         api_url: str = API_GATEWAY_URL,
         api_key: str = DEFAULT_API_KEY,
         analyze_hotkey: str = "ctrl+alt+c",
-        apply_hotkey: str = "ctrl+alt+a",
         review_hotkey: str = "ctrl+alt+r",
         clipboard_monitoring: bool = False,
     ):
@@ -573,9 +572,6 @@ class SystemTrayApp:
         # Register hotkeys
         self._hotkey_manager.register(
             analyze_hotkey, "analyze", self._on_analyze_hotkey
-        )
-        self._hotkey_manager.register(
-            apply_hotkey, "analyze_and_apply", self._on_apply_hotkey
         )
         self._hotkey_manager.register(
             review_hotkey, "review", self._on_review_hotkey
@@ -810,10 +806,6 @@ class SystemTrayApp:
     def _on_analyze_hotkey(self) -> None:
         """Handle analyze hotkey press."""
         self._run_correction(auto_apply=False)
-
-    def _on_apply_hotkey(self) -> None:
-        """Handle analyze-and-apply hotkey press."""
-        self._run_correction(auto_apply=True)
 
     def _on_clipboard_text(self, text: str) -> None:
         """Handle new clipboard text detected."""
@@ -1210,7 +1202,6 @@ def main():
         api_url=api_url,
         api_key=get_config("API_KEY", DEFAULT_API_KEY),
         analyze_hotkey=get_config("HOTKEY_ANALYZE", "ctrl+alt+c"),
-        apply_hotkey=get_config("HOTKEY_APPLY", "ctrl+alt+a"),
         review_hotkey=get_config("HOTKEY_REVIEW", "ctrl+alt+r"),
         clipboard_monitoring=get_config("CLIPBOARD_MONITORING", "false").lower()
         == "true",
