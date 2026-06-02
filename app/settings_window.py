@@ -10,6 +10,24 @@ from tkinter import ttk, messagebox
 from typing import Optional
 
 
+# --- Color Palette (matches review_window.py) ---------------------------------
+
+COLORS = {
+    "bg": "#1e1e2e",
+    "surface": "#2a2a3c",
+    "surface_hover": "#33334a",
+    "text": "#e4e4e7",
+    "text_dim": "#9ca3af",
+    "accent": "#8b5cf6",
+    "success": "#34d399",
+    "error": "#f87171",
+    "border": "#3f3f5a",
+    "btn_primary": "#7c3aed",
+    "btn_hover": "#6d28d9",
+    "btn_cancel": "#4b5563",
+}
+
+
 def _find_env_path() -> str:
     """Find the .env file path."""
     # Project root is parent of app/
@@ -93,8 +111,8 @@ class SettingsWindow:
 
         self._window = tk.Tk()
         self._window.title("Auto-Correction Settings")
-        self._window.geometry("550x450")
-        self._window.configure(bg="#f5f5f5")
+        self._window.geometry("550x500")
+        self._window.configure(bg=COLORS["bg"])
         self._window.attributes("-topmost", True)
 
         self._build_ui()
@@ -102,7 +120,7 @@ class SettingsWindow:
         # Center on screen
         self._window.update_idletasks()
         x = (self._window.winfo_screenwidth() // 2) - (550 // 2)
-        y = (self._window.winfo_screenheight() // 2) - (450 // 2)
+        y = (self._window.winfo_screenheight() // 2) - (500 // 2)
         self._window.geometry(f"+{x}+{y}")
 
         self._window.mainloop()
@@ -116,18 +134,23 @@ class SettingsWindow:
             window,
             text="Settings",
             font=("Segoe UI", 14, "bold"),
-            bg="#f5f5f5",
+            bg=COLORS["bg"],
+            fg=COLORS["text"],
         ).pack(pady=(15, 10))
 
         # Main frame
-        main_frame = tk.Frame(window, bg="#f5f5f5")
+        main_frame = tk.Frame(window, bg=COLORS["bg"])
         main_frame.pack(fill=tk.BOTH, expand=True, padx=20)
 
         row = 0
 
         # LLM Backend
         tk.Label(
-            main_frame, text="LLM Backend:", bg="#f5f5f5", font=("Segoe UI", 10)
+            main_frame,
+            text="LLM Backend:",
+            bg=COLORS["bg"],
+            fg=COLORS["text"],
+            font=("Segoe UI", 10),
         ).grid(row=row, column=0, sticky="w", pady=5)
 
         self._backend_var = tk.StringVar(
@@ -145,100 +168,161 @@ class SettingsWindow:
 
         # Groq/OpenAI API Key
         tk.Label(
-            main_frame, text="Groq API Key:", bg="#f5f5f5", font=("Segoe UI", 10)
+            main_frame,
+            text="Groq API Key:",
+            bg=COLORS["bg"],
+            fg=COLORS["text"],
+            font=("Segoe UI", 10),
         ).grid(row=row, column=0, sticky="w", pady=5)
 
         self._openai_key_var = tk.StringVar(
             value=self._env_vars.get("OPENAI_API_KEY", "")
         )
         tk.Entry(
-            main_frame, textvariable=self._openai_key_var, width=35, show="*"
+            main_frame,
+            textvariable=self._openai_key_var,
+            width=35,
+            show="*",
+            bg=COLORS["surface"],
+            fg=COLORS["text"],
+            insertbackground=COLORS["text"],
+            relief="flat",
+            highlightthickness=1,
+            highlightbackground=COLORS["border"],
         ).grid(row=row, column=1, sticky="w", pady=5, padx=(10, 0))
         row += 1
 
         # OpenAI Base URL
         tk.Label(
-            main_frame, text="Base URL:", bg="#f5f5f5", font=("Segoe UI", 10)
+            main_frame,
+            text="Base URL:",
+            bg=COLORS["bg"],
+            fg=COLORS["text"],
+            font=("Segoe UI", 10),
         ).grid(row=row, column=0, sticky="w", pady=5)
 
         self._base_url_var = tk.StringVar(
             value=self._env_vars.get("OPENAI_BASE_URL", "https://api.groq.com/openai/v1")
         )
         tk.Entry(
-            main_frame, textvariable=self._base_url_var, width=35
+            main_frame,
+            textvariable=self._base_url_var,
+            width=35,
+            bg=COLORS["surface"],
+            fg=COLORS["text"],
+            insertbackground=COLORS["text"],
+            relief="flat",
+            highlightthickness=1,
+            highlightbackground=COLORS["border"],
         ).grid(row=row, column=1, sticky="w", pady=5, padx=(10, 0))
         row += 1
 
         # Model
         tk.Label(
-            main_frame, text="Model:", bg="#f5f5f5", font=("Segoe UI", 10)
+            main_frame,
+            text="Model:",
+            bg=COLORS["bg"],
+            fg=COLORS["text"],
+            font=("Segoe UI", 10),
         ).grid(row=row, column=0, sticky="w", pady=5)
 
         self._model_var = tk.StringVar(
             value=self._env_vars.get("OPENAI_MODEL", "llama-3.3-70b-versatile")
         )
         tk.Entry(
-            main_frame, textvariable=self._model_var, width=35
+            main_frame,
+            textvariable=self._model_var,
+            width=35,
+            bg=COLORS["surface"],
+            fg=COLORS["text"],
+            insertbackground=COLORS["text"],
+            relief="flat",
+            highlightthickness=1,
+            highlightbackground=COLORS["border"],
         ).grid(row=row, column=1, sticky="w", pady=5, padx=(10, 0))
         row += 1
 
         # Gemini API Key
         tk.Label(
-            main_frame, text="Gemini API Key:", bg="#f5f5f5", font=("Segoe UI", 10)
+            main_frame,
+            text="Gemini API Key:",
+            bg=COLORS["bg"],
+            fg=COLORS["text"],
+            font=("Segoe UI", 10),
         ).grid(row=row, column=0, sticky="w", pady=5)
 
         self._gemini_key_var = tk.StringVar(
             value=self._env_vars.get("GEMINI_API_KEY", "")
         )
         tk.Entry(
-            main_frame, textvariable=self._gemini_key_var, width=35, show="*"
+            main_frame,
+            textvariable=self._gemini_key_var,
+            width=35,
+            show="*",
+            bg=COLORS["surface"],
+            fg=COLORS["text"],
+            insertbackground=COLORS["text"],
+            relief="flat",
+            highlightthickness=1,
+            highlightbackground=COLORS["border"],
         ).grid(row=row, column=1, sticky="w", pady=5, padx=(10, 0))
         row += 1
 
         # Hotkeys section
-        ttk.Separator(main_frame, orient=tk.HORIZONTAL).grid(
-            row=row, column=0, columnspan=2, sticky="ew", pady=10
-        )
+        separator = tk.Frame(main_frame, height=1, bg=COLORS["border"])
+        separator.grid(row=row, column=0, columnspan=2, sticky="ew", pady=10)
         row += 1
 
         tk.Label(
-            main_frame, text="Hotkey (Analyze):", bg="#f5f5f5", font=("Segoe UI", 10)
+            main_frame,
+            text="Hotkey (Analyze):",
+            bg=COLORS["bg"],
+            fg=COLORS["text"],
+            font=("Segoe UI", 10),
         ).grid(row=row, column=0, sticky="w", pady=5)
 
         self._hotkey_analyze_var = tk.StringVar(
             value=self._env_vars.get("HOTKEY_ANALYZE", "ctrl+alt+c")
         )
         tk.Entry(
-            main_frame, textvariable=self._hotkey_analyze_var, width=35
+            main_frame,
+            textvariable=self._hotkey_analyze_var,
+            width=35,
+            bg=COLORS["surface"],
+            fg=COLORS["text"],
+            insertbackground=COLORS["text"],
+            relief="flat",
+            highlightthickness=1,
+            highlightbackground=COLORS["border"],
         ).grid(row=row, column=1, sticky="w", pady=5, padx=(10, 0))
         row += 1
 
         tk.Label(
-            main_frame, text="Hotkey (Apply):", bg="#f5f5f5", font=("Segoe UI", 10)
-        ).grid(row=row, column=0, sticky="w", pady=5)
-
-        self._hotkey_apply_var = tk.StringVar(
-            value=self._env_vars.get("HOTKEY_APPLY", "ctrl+alt+a")
-        )
-        tk.Entry(
-            main_frame, textvariable=self._hotkey_apply_var, width=35
-        ).grid(row=row, column=1, sticky="w", pady=5, padx=(10, 0))
-        row += 1
-
-        tk.Label(
-            main_frame, text="Hotkey (Review):", bg="#f5f5f5", font=("Segoe UI", 10)
+            main_frame,
+            text="Hotkey (Review):",
+            bg=COLORS["bg"],
+            fg=COLORS["text"],
+            font=("Segoe UI", 10),
         ).grid(row=row, column=0, sticky="w", pady=5)
 
         self._hotkey_review_var = tk.StringVar(
             value=self._env_vars.get("HOTKEY_REVIEW", "ctrl+alt+r")
         )
         tk.Entry(
-            main_frame, textvariable=self._hotkey_review_var, width=35
+            main_frame,
+            textvariable=self._hotkey_review_var,
+            width=35,
+            bg=COLORS["surface"],
+            fg=COLORS["text"],
+            insertbackground=COLORS["text"],
+            relief="flat",
+            highlightthickness=1,
+            highlightbackground=COLORS["border"],
         ).grid(row=row, column=1, sticky="w", pady=5, padx=(10, 0))
         row += 1
 
         # Buttons
-        btn_frame = tk.Frame(window, bg="#f5f5f5")
+        btn_frame = tk.Frame(window, bg=COLORS["bg"])
         btn_frame.pack(fill=tk.X, padx=20, pady=15)
 
         tk.Button(
@@ -246,7 +330,12 @@ class SettingsWindow:
             text="Cancel",
             command=self._on_cancel,
             width=10,
-            bg="#e0e0e0",
+            bg=COLORS["btn_cancel"],
+            fg=COLORS["text"],
+            activebackground=COLORS["surface_hover"],
+            activeforeground=COLORS["text"],
+            relief="flat",
+            cursor="hand2",
         ).pack(side=tk.RIGHT, padx=(5, 0))
 
         tk.Button(
@@ -254,8 +343,22 @@ class SettingsWindow:
             text="Save",
             command=self._on_save,
             width=10,
-            bg="#c8e6c9",
+            bg=COLORS["btn_primary"],
+            fg=COLORS["text"],
+            activebackground=COLORS["btn_hover"],
+            activeforeground=COLORS["text"],
+            relief="flat",
+            cursor="hand2",
         ).pack(side=tk.RIGHT, padx=(5, 0))
+
+        # --- Developer credit -------------------------------------------------
+        tk.Label(
+            window,
+            text="Developed by Ezekiel Matomi Lucky",
+            font=("Segoe UI", 8),
+            bg=COLORS["bg"],
+            fg="#6b7280",
+        ).pack(side=tk.BOTTOM, pady=(0, 6))
 
     def _on_save(self) -> None:
         """Save settings to .env file."""
@@ -265,7 +368,6 @@ class SettingsWindow:
             "OPENAI_BASE_URL": self._base_url_var.get(),
             "OPENAI_MODEL": self._model_var.get(),
             "HOTKEY_ANALYZE": self._hotkey_analyze_var.get(),
-            "HOTKEY_APPLY": self._hotkey_apply_var.get(),
             "HOTKEY_REVIEW": self._hotkey_review_var.get(),
         }
 

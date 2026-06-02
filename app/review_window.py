@@ -269,6 +269,16 @@ class ReviewWindow:
         )
         apply_sel_btn.pack(side=tk.RIGHT, padx=(0, 8))
 
+        # ─── Developer credit ────────────────────────────────────────────
+        credit = tk.Label(
+            window,
+            text="Developed by Ezekiel Matomi Lucky",
+            font=("Segoe UI", 8),
+            bg=COLORS["bg"],
+            fg="#6b7280",
+        )
+        credit.pack(side=tk.BOTTOM, pady=(0, 6))
+
     # ─── Actions ──────────────────────────────────────────────────────────
 
     def _on_apply_all(self) -> None:

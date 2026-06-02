@@ -758,28 +758,16 @@ class SystemTrayApp:
     def _tray_open_history(self, icon, item):
         """Handle 'Open History' menu click."""
         logger.info("Open History requested")
+        threading.Thread(target=self._show_history_window, daemon=True).start()
+
+    def _show_history_window(self) -> None:
+        """Open the history window."""
         try:
-            from .history import get_history
-            records = get_history(limit=10)
-            if not records:
-                self._notification_manager.notify_info(
-                    "History", "No correction history yet."
-                )
-            else:
-                summary_lines = [f"Last {len(records)} correction(s):"]
-                for r in records[:5]:
-                    ts = r["timestamp"][:16].replace("T", " ")
-                    n_corr = len(r["corrections"])
-                    preview = r["original_text"][:40]
-                    summary_lines.append(f"\u2022 [{ts}] {n_corr} fix(es): {preview}...")
-                self._notification_manager.notify_info(
-                    "Correction History", "\n".join(summary_lines)
-                )
+            from .history_window import show_history
+            show_history()
         except Exception as e:
-            logger.error(f"History error: {e}")
-            self._notification_manager.notify_info(
-                "History", f"Error loading history: {e}"
-            )
+            logger.error(f"History window error: {e}")
+            self._notification_manager.notify_error(f"Cannot open history: {e}")
 
     def _tray_open_settings(self, icon, item):
         """Handle 'Settings' menu click — opens the settings GUI."""
