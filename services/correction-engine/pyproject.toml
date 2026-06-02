@@ -1,0 +1,29 @@
+[project]
+name = "correction-engine"
+version = "0.1.0"
+description = "Core text analysis and correction service for the Local Auto-Correction Tool"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.104.0",
+    "uvicorn[standard]>=0.24.0",
+    "httpx>=0.25.0",
+    "aiosqlite>=0.19.0",
+    "pydantic>=2.5.0",
+    "langdetect>=1.0.9",
+    "pyyaml>=6.0.1",
+    "striprtf>=0.0.26",
+]
+
+[project.optional-dependencies]
+pdf = [
+    "reportlab>=4.0.0",
+]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.23.0",
+    "hypothesis>=6.92.0",
+]
+
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"

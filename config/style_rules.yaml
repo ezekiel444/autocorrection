@@ -1,0 +1,75 @@
+# Local Auto-Correction Tool - Default Style Rules
+rules:
+  - name: "sentence_length"
+    rule_type: "sentence_length"
+    severity: "warning"
+    enabled: true
+    config:
+      max_words: 30
+      message: "Sentence exceeds {max_words} words. Consider splitting for clarity."
+
+  - name: "passive_voice"
+    rule_type: "passive_voice"
+    severity: "suggestion"
+    enabled: true
+    config:
+      patterns:
+        - "was \\w+ed"
+        - "were \\w+ed"
+        - "is being \\w+ed"
+        - "has been \\w+ed"
+        - "had been \\w+ed"
+        - "will be \\w+ed"
+      message: "Consider using active voice for clarity."
+
+  - name: "tone_formal"
+    rule_type: "tone"
+    severity: "suggestion"
+    enabled: false
+    config:
+      target_tone: "formal"
+      informal_patterns:
+        - "gonna"
+        - "wanna"
+        - "gotta"
+        - "kinda"
+        - "sorta"
+        - "ain't"
+        - "y'all"
+      message: "Informal language detected. Consider using formal alternatives."
+
+  - name: "tone_informal"
+    rule_type: "tone"
+    severity: "suggestion"
+    enabled: false
+    config:
+      target_tone: "informal"
+      formal_patterns:
+        - "furthermore"
+        - "henceforth"
+        - "notwithstanding"
+        - "aforementioned"
+        - "hereinafter"
+      message: "Overly formal language detected. Consider simpler alternatives."
+
+  - name: "jargon_avoidance"
+    rule_type: "jargon"
+    severity: "suggestion"
+    enabled: true
+    config:
+      terms:
+        - term: "leverage"
+          alternative: "use"
+        - term: "utilize"
+          alternative: "use"
+        - term: "synergy"
+          alternative: "collaboration"
+        - term: "paradigm"
+          alternative: "model"
+        - term: "bandwidth"
+          alternative: "capacity"
+        - term: "circle back"
+          alternative: "follow up"
+        - term: "deep dive"
+          alternative: "detailed analysis"
+      message: "Consider replacing '{term}' with '{alternative}' for clarity."

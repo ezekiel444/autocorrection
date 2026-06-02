@@ -1,0 +1,45 @@
+# Local Auto-Correction Tool - Default Settings
+general:
+  default_language: "en"
+  auto_apply_high_confidence: false
+  clipboard_monitoring: false
+  clipboard_min_length: 10
+  clipboard_max_length: 5000
+  max_text_length: 100000
+  history_retention_days: 30
+
+language:
+  supported: ["en", "fr", "es", "de", "pt"]
+  detection_threshold: 0.7
+  default_on_low_confidence: "en"
+
+style_guide:
+  enabled: true
+  max_sentence_length: 30
+  detect_passive_voice: true
+  tone: "neutral"  # formal, informal, neutral
+  custom_rules_path: "/config/style_rules.yaml"
+
+hotkeys:
+  analyze: "ctrl+alt+c"
+  analyze_and_apply: "ctrl+alt+a"
+
+api:
+  port: 8080
+  rate_limit_per_minute: 60
+
+batch:
+  default_segment_size: 1000
+  min_segment_size: 100
+  max_segment_size: 5000
+
+plugins:
+  directory: "/plugins"
+  max_plugins: 50
+  execution_timeout_seconds: 30
+
+model:
+  name: "llama3.2:3b"
+  context_window: 4096
+  temperature: 0.3
+  top_p: 0.9
