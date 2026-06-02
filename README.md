@@ -99,14 +99,16 @@ That's it. The tool auto-copies your selection, sends it for correction, and put
 
 | Shortcut | Action |
 |----------|--------|
-| **Ctrl+Alt+C** | Correct selected text — result goes to clipboard |
-| **Ctrl+Alt+A** | Same as above (both do auto-apply now) |
+| **Ctrl+Alt+C** | Auto-correct selected text — result goes to clipboard, just paste back |
+| **Ctrl+Alt+A** | Same as Ctrl+Alt+C |
+| **Ctrl+Alt+R** | Correct with review — shows a popup to accept/reject individual corrections |
 
 ### System Tray Menu
 
 Right-click the tray icon:
 - **Run Correction** — Correct whatever is on the clipboard
-- **Settings** — Shows config file location
+- **Open History** — View past corrections
+- **Settings** — Opens settings GUI (backend, API keys, hotkeys)
 - **Quit** — Exit the application
 
 ## Configuration
