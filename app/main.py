@@ -569,7 +569,7 @@ class SystemTrayApp:
         api_url: str = API_GATEWAY_URL,
         api_key: str = DEFAULT_API_KEY,
         analyze_hotkey: str = "ctrl+alt+c",
-        review_hotkey: str = "ctrl+f7",
+        review_hotkey: str = "ctrl+alt+v",
         clipboard_monitoring: bool = False,
     ):
         """Initialize the system tray application."""
@@ -642,7 +642,7 @@ class SystemTrayApp:
                     "Auto-Correction Tool Ready",
                     "Hotkeys active:\n"
                     "• Ctrl+Alt+C (auto-correct)\n"
-                    "• Ctrl+F7 (review before applying)"
+                    "• Ctrl+Alt+V (review before applying)"
                 )
 
             logger.info("System tray application started")
@@ -668,14 +668,14 @@ class SystemTrayApp:
                 "Auto-Correction Tool Ready (Headless)",
                 "Hotkeys active:\n"
                 "• Ctrl+Alt+C (auto-correct)\n"
-                "• Ctrl+F7 (review before applying)"
+                "• Ctrl+Alt+V (review before applying)"
             )
 
         logger.info("Running in headless mode (no system tray)")
         print(
             "Auto-Correction Tool running. "
             "Press Ctrl+Alt+C to correct, "
-            "Ctrl+F7 to review. Press Ctrl+C to quit.",
+            "Ctrl+Alt+V to review. Press Ctrl+C to quit.",
             file=sys.stderr,
         )
         try:
@@ -824,7 +824,7 @@ class SystemTrayApp:
         self._run_correction(auto_apply=False, text=text)
 
     def _on_review_hotkey(self) -> None:
-        """Handle review hotkey press (Ctrl+F7) — correction with review popup."""
+        """Handle review hotkey press (Ctrl+Alt+V) — correction with review popup."""
         self._run_correction(auto_apply=False, with_review=True)
 
     def _simulate_copy(self) -> None:
@@ -1220,7 +1220,7 @@ def main():
         api_url=api_url,
         api_key=get_config("API_KEY", DEFAULT_API_KEY),
         analyze_hotkey=get_config("HOTKEY_ANALYZE", "ctrl+alt+c"),
-        review_hotkey=get_config("HOTKEY_REVIEW", "ctrl+f7"),
+        review_hotkey=get_config("HOTKEY_REVIEW", "ctrl+alt+v"),
         clipboard_monitoring=get_config("CLIPBOARD_MONITORING", "false").lower()
         == "true",
     )
