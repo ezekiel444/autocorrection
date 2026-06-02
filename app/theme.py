@@ -13,9 +13,9 @@ COLORS = {
     "surface_hover": "#2f3349",  # Hover state
 
     # Text
-    "text": "#c0caf5",           # Primary text (bright, readable)
+    "text": "#e2e8f0",           # Primary text (white-ish, very readable)
     "text_bright": "#ffffff",    # High emphasis text
-    "text_dim": "#565f89",       # Secondary/muted text
+    "text_dim": "#94a3b8",       # Secondary text (lighter gray, more readable)
 
     # Accents
     "accent": "#7aa2f7",         # Blue accent

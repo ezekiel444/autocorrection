@@ -100,7 +100,7 @@ That's it. The tool auto-copies your selection, sends it for correction, and put
 | Shortcut | Action |
 |----------|--------|
 | **Ctrl+Alt+C** | Auto-correct selected text — result goes to clipboard, just paste back |
-| **Ctrl+Shift+R** | Correct with review — shows a popup to accept/reject individual corrections |
+| **Ctrl+Shift+Space** | Correct with review — shows a popup to accept/reject individual corrections |
 
 ### System Tray Menu
 

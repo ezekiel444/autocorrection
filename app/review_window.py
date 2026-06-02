@@ -96,10 +96,12 @@ class ReviewWindow:
 
             cb = tk.Checkbutton(
                 top, variable=var, bg=COLORS["surface"],
-                fg=COLORS["text"], activebackground=COLORS["surface"],
-                activeforeground=COLORS["text"],
-                selectcolor=COLORS["accent"],
-                highlightthickness=0, bd=0,
+                fg=COLORS["text_bright"], activebackground=COLORS["surface"],
+                activeforeground=COLORS["text_bright"],
+                selectcolor="#2563eb",
+                indicatoron=True,
+                highlightthickness=0, bd=1,
+                font=("Segoe UI", 12),
             )
             cb.pack(side=tk.LEFT, padx=(0, 12))
 

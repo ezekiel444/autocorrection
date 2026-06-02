@@ -176,7 +176,6 @@ class HotkeyManager:
                 for part in parts:
                     part = part.strip().lower()
                     if part == "ctrl":
-                        # Store as the left variant (right will be normalized to this)
                         keys.add(keyboard.Key.ctrl_l)
                     elif part == "shift":
                         keys.add(keyboard.Key.shift_l)
@@ -184,6 +183,12 @@ class HotkeyManager:
                         keys.add(keyboard.Key.alt_l)
                     elif part in ("super", "cmd"):
                         keys.add(keyboard.Key.cmd)
+                    elif part == "space":
+                        keys.add(keyboard.Key.space)
+                    elif part == "tab":
+                        keys.add(keyboard.Key.tab)
+                    elif part == "enter":
+                        keys.add(keyboard.Key.enter)
                     else:
                         # Store character keys as lowercase string
                         keys.add(part.lower())
@@ -555,7 +560,7 @@ class SystemTrayApp:
         api_url: str = API_GATEWAY_URL,
         api_key: str = DEFAULT_API_KEY,
         analyze_hotkey: str = "ctrl+alt+c",
-        review_hotkey: str = "ctrl+shift+r",
+        review_hotkey: str = "ctrl+shift+space",
         clipboard_monitoring: bool = False,
     ):
         """Initialize the system tray application."""
@@ -628,7 +633,7 @@ class SystemTrayApp:
                     "Auto-Correction Tool Ready",
                     "Hotkeys active:\n"
                     "• Ctrl+Alt+C (auto-correct)\n"
-                    "• Ctrl+Shift+R (review before applying)"
+                    "• Ctrl+Shift+Space (review before applying)"
                 )
 
             logger.info("System tray application started")
@@ -654,14 +659,14 @@ class SystemTrayApp:
                 "Auto-Correction Tool Ready (Headless)",
                 "Hotkeys active:\n"
                 "• Ctrl+Alt+C (auto-correct)\n"
-                "• Ctrl+Shift+R (review before applying)"
+                "• Ctrl+Shift+Space (review before applying)"
             )
 
         logger.info("Running in headless mode (no system tray)")
         print(
             "Auto-Correction Tool running. "
             "Press Ctrl+Alt+C to correct, "
-            "Ctrl+Shift+R to review. Press Ctrl+C to quit.",
+            "Ctrl+Shift+Space to review. Press Ctrl+C to quit.",
             file=sys.stderr,
         )
         try:
@@ -810,7 +815,7 @@ class SystemTrayApp:
         self._run_correction(auto_apply=False, text=text)
 
     def _on_review_hotkey(self) -> None:
-        """Handle review hotkey press (Ctrl+Shift+R) — correction with review popup."""
+        """Handle review hotkey press (Ctrl+Shift+Space) — correction with review popup."""
         self._run_correction(auto_apply=False, with_review=True)
 
     def _simulate_copy(self) -> None:
@@ -1206,7 +1211,7 @@ def main():
         api_url=api_url,
         api_key=get_config("API_KEY", DEFAULT_API_KEY),
         analyze_hotkey=get_config("HOTKEY_ANALYZE", "ctrl+alt+c"),
-        review_hotkey=get_config("HOTKEY_REVIEW", "ctrl+shift+r"),
+        review_hotkey=get_config("HOTKEY_REVIEW", "ctrl+shift+space"),
         clipboard_monitoring=get_config("CLIPBOARD_MONITORING", "false").lower()
         == "true",
     )
