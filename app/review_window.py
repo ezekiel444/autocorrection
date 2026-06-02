@@ -1,227 +1,293 @@
-"""Review Window Module - Tkinter popup for reviewing corrections before applying.
+"""Review Window Module - Modern popup for reviewing corrections before applying.
 
-Shows original text with errors highlighted in red and suggested corrections
-in green. Users can select/deselect individual corrections before applying.
+A clean, minimal design showing corrections with red/green highlighting.
+Users can select/deselect individual corrections before applying.
 """
 
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, font as tkfont
 from typing import Optional
 
 
-class ReviewWindow:
-    """Tkinter window for reviewing and selectively applying corrections.
+# ─── Color Palette ────────────────────────────────────────────────────────────
 
-    Displays original text with errors highlighted, shows suggested
-    corrections, and allows selective application via checkboxes.
-    """
+COLORS = {
+    "bg": "#1e1e2e",           # Dark background
+    "surface": "#2a2a3c",      # Card/panel background
+    "surface_hover": "#33334a", # Hover state
+    "text": "#e4e4e7",         # Primary text
+    "text_dim": "#9ca3af",     # Secondary text
+    "accent": "#8b5cf6",       # Purple accent
+    "success": "#34d399",      # Green for corrections
+    "error": "#f87171",        # Red for original errors
+    "border": "#3f3f5a",       # Subtle border
+    "btn_primary": "#7c3aed",  # Button purple
+    "btn_hover": "#6d28d9",    # Button hover
+    "btn_cancel": "#4b5563",   # Cancel button
+}
+
+
+class ReviewWindow:
+    """Modern review window for corrections."""
 
     def __init__(self, original_text: str, corrections: list[dict]):
-        """Initialize the review window.
-
-        Args:
-            original_text: The original text before correction.
-            corrections: List of correction dicts from the LLM.
-        """
         self._original_text = original_text
         self._corrections = corrections
         self._selected: list[tk.BooleanVar] = []
         self._result: Optional[list[dict]] = None
         self._window: Optional[tk.Tk] = None
 
-    @property
-    def result(self) -> Optional[list[dict]]:
-        """The selected corrections after the window is closed, or None if cancelled."""
-        return self._result
-
     def show(self) -> Optional[list[dict]]:
-        """Show the review window and block until user acts.
-
-        Returns:
-            List of selected corrections, or None if cancelled.
-        """
+        """Show the review window and block until user acts."""
         self._window = tk.Tk()
         self._window.title("Review Corrections")
-        self._window.geometry("700x500")
-        self._window.configure(bg="#f5f5f5")
-
-        # Make window stay on top
+        self._window.geometry("680x520")
+        self._window.configure(bg=COLORS["bg"])
         self._window.attributes("-topmost", True)
+        self._window.overrideredirect(False)
+
+        # Remove default window icon padding
+        try:
+            self._window.iconbitmap(default="")
+        except Exception:
+            pass
 
         self._build_ui()
 
-        # Center window on screen
+        # Center on screen
         self._window.update_idletasks()
-        x = (self._window.winfo_screenwidth() // 2) - (700 // 2)
-        y = (self._window.winfo_screenheight() // 2) - (500 // 2)
+        x = (self._window.winfo_screenwidth() // 2) - (680 // 2)
+        y = (self._window.winfo_screenheight() // 2) - (520 // 2)
         self._window.geometry(f"+{x}+{y}")
 
         self._window.mainloop()
         return self._result
 
     def _build_ui(self) -> None:
-        """Build the window UI components."""
         window = self._window
 
-        # Title label
-        title_frame = tk.Frame(window, bg="#f5f5f5")
-        title_frame.pack(fill=tk.X, padx=10, pady=(10, 5))
+        # ─── Header ──────────────────────────────────────────────────────
+        header = tk.Frame(window, bg=COLORS["bg"], pady=16, padx=24)
+        header.pack(fill=tk.X)
 
         tk.Label(
-            title_frame,
-            text=f"Found {len(self._corrections)} correction(s)",
-            font=("Segoe UI", 12, "bold"),
-            bg="#f5f5f5",
+            header,
+            text="Review Corrections",
+            font=("Segoe UI", 16, "bold"),
+            bg=COLORS["bg"],
+            fg=COLORS["text"],
         ).pack(side=tk.LEFT)
 
-        # Scrollable corrections list
-        list_frame = tk.Frame(window, bg="#ffffff", relief=tk.SUNKEN, bd=1)
-        list_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+        count_label = tk.Label(
+            header,
+            text=f"{len(self._corrections)} found",
+            font=("Segoe UI", 11),
+            bg=COLORS["bg"],
+            fg=COLORS["text_dim"],
+        )
+        count_label.pack(side=tk.RIGHT)
 
-        canvas = tk.Canvas(list_frame, bg="#ffffff", highlightthickness=0)
-        scrollbar = ttk.Scrollbar(list_frame, orient=tk.VERTICAL, command=canvas.yview)
-        scroll_frame = tk.Frame(canvas, bg="#ffffff")
+        # ─── Divider ─────────────────────────────────────────────────────
+        tk.Frame(window, bg=COLORS["border"], height=1).pack(fill=tk.X)
 
+        # ─── Scrollable corrections list ─────────────────────────────────
+        list_container = tk.Frame(window, bg=COLORS["bg"])
+        list_container.pack(fill=tk.BOTH, expand=True, padx=16, pady=8)
+
+        canvas = tk.Canvas(
+            list_container, bg=COLORS["bg"],
+            highlightthickness=0, bd=0,
+        )
+        scrollbar = ttk.Scrollbar(
+            list_container, orient=tk.VERTICAL, command=canvas.yview
+        )
+
+        # Style the scrollbar
+        style = ttk.Style()
+        style.theme_use("clam")
+        style.configure(
+            "Vertical.TScrollbar",
+            background=COLORS["surface"],
+            troughcolor=COLORS["bg"],
+            arrowcolor=COLORS["text_dim"],
+        )
+
+        scroll_frame = tk.Frame(canvas, bg=COLORS["bg"])
         scroll_frame.bind(
             "<Configure>",
             lambda e: canvas.configure(scrollregion=canvas.bbox("all")),
         )
-        canvas.create_window((0, 0), window=scroll_frame, anchor="nw")
+        canvas.create_window((0, 0), window=scroll_frame, anchor="nw", width=620)
         canvas.configure(yscrollcommand=scrollbar.set)
+
+        # Mouse wheel scrolling
+        def _on_mousewheel(event):
+            canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+        canvas.bind_all("<MouseWheel>", _on_mousewheel)
 
         canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
-        # Add each correction as a row
+        # ─── Correction cards ────────────────────────────────────────────
         for i, corr in enumerate(self._corrections):
             var = tk.BooleanVar(value=True)
             self._selected.append(var)
 
-            row_frame = tk.Frame(scroll_frame, bg="#ffffff", pady=4, padx=8)
-            row_frame.pack(fill=tk.X, padx=4, pady=2)
-
-            # Checkbox
-            cb = tk.Checkbutton(
-                row_frame, variable=var, bg="#ffffff", activebackground="#ffffff"
+            # Card frame
+            card = tk.Frame(
+                scroll_frame, bg=COLORS["surface"],
+                padx=16, pady=12, relief=tk.FLAT,
             )
-            cb.pack(side=tk.LEFT, padx=(0, 8))
+            card.pack(fill=tk.X, pady=4)
 
-            # Correction details
-            detail_frame = tk.Frame(row_frame, bg="#ffffff")
-            detail_frame.pack(side=tk.LEFT, fill=tk.X, expand=True)
+            # Top row: checkbox + original → suggested
+            top_row = tk.Frame(card, bg=COLORS["surface"])
+            top_row.pack(fill=tk.X)
 
-            # Original in red
+            cb = tk.Checkbutton(
+                top_row, variable=var,
+                bg=COLORS["surface"], fg=COLORS["text"],
+                activebackground=COLORS["surface"],
+                activeforeground=COLORS["text"],
+                selectcolor=COLORS["bg"],
+                highlightthickness=0, bd=0,
+            )
+            cb.pack(side=tk.LEFT, padx=(0, 10))
+
             original = corr.get("original_text", "")
             suggested = corr.get("suggested_text", "")
-            correction_type = corr.get("correction_type", "")
+
+            # Original text (red, strikethrough)
+            tk.Label(
+                top_row,
+                text=original if len(original) <= 50 else original[:47] + "...",
+                font=("Consolas", 11, "overstrike"),
+                fg=COLORS["error"],
+                bg=COLORS["surface"],
+            ).pack(side=tk.LEFT)
+
+            # Arrow
+            tk.Label(
+                top_row,
+                text="  →  ",
+                font=("Segoe UI", 11),
+                fg=COLORS["text_dim"],
+                bg=COLORS["surface"],
+            ).pack(side=tk.LEFT)
+
+            # Suggested text (green, bold)
+            tk.Label(
+                top_row,
+                text=suggested if len(suggested) <= 50 else suggested[:47] + "...",
+                font=("Consolas", 11, "bold"),
+                fg=COLORS["success"],
+                bg=COLORS["surface"],
+            ).pack(side=tk.LEFT)
+
+            # Bottom row: type badge + reason
             reason = corr.get("reason", "")
+            correction_type = corr.get("correction_type", "")
 
-            text_frame = tk.Frame(detail_frame, bg="#ffffff")
-            text_frame.pack(fill=tk.X)
-
-            tk.Label(
-                text_frame,
-                text=original,
-                fg="#d32f2f",
-                font=("Consolas", 10, "overstrike"),
-                bg="#ffffff",
-                anchor="w",
-            ).pack(side=tk.LEFT)
-
-            tk.Label(
-                text_frame,
-                text=" → ",
-                font=("Segoe UI", 10),
-                bg="#ffffff",
-            ).pack(side=tk.LEFT)
-
-            tk.Label(
-                text_frame,
-                text=suggested,
-                fg="#388e3c",
-                font=("Consolas", 10, "bold"),
-                bg="#ffffff",
-                anchor="w",
-            ).pack(side=tk.LEFT)
-
-            # Type and reason
             if reason or correction_type:
-                info_text = f"[{correction_type}]" if correction_type else ""
+                bottom_row = tk.Frame(card, bg=COLORS["surface"])
+                bottom_row.pack(fill=tk.X, padx=(32, 0), pady=(4, 0))
+
+                if correction_type:
+                    badge = tk.Label(
+                        bottom_row,
+                        text=f" {correction_type} ",
+                        font=("Segoe UI", 8),
+                        fg=COLORS["accent"],
+                        bg=COLORS["bg"],
+                        padx=4, pady=1,
+                    )
+                    badge.pack(side=tk.LEFT, padx=(0, 8))
+
                 if reason:
-                    info_text += f" {reason}" if info_text else reason
-                tk.Label(
-                    detail_frame,
-                    text=info_text,
-                    fg="#757575",
-                    font=("Segoe UI", 9),
-                    bg="#ffffff",
-                    anchor="w",
-                ).pack(fill=tk.X)
+                    tk.Label(
+                        bottom_row,
+                        text=reason,
+                        font=("Segoe UI", 9),
+                        fg=COLORS["text_dim"],
+                        bg=COLORS["surface"],
+                        anchor="w",
+                    ).pack(side=tk.LEFT)
 
-            # Separator
-            ttk.Separator(scroll_frame, orient=tk.HORIZONTAL).pack(
-                fill=tk.X, padx=8
-            )
+        # ─── Divider ─────────────────────────────────────────────────────
+        tk.Frame(window, bg=COLORS["border"], height=1).pack(fill=tk.X)
 
-        # Buttons frame
-        btn_frame = tk.Frame(window, bg="#f5f5f5")
-        btn_frame.pack(fill=tk.X, padx=10, pady=10)
+        # ─── Footer buttons ──────────────────────────────────────────────
+        footer = tk.Frame(window, bg=COLORS["bg"], pady=14, padx=24)
+        footer.pack(fill=tk.X)
 
-        tk.Button(
-            btn_frame,
+        # Cancel button
+        cancel_btn = tk.Button(
+            footer,
             text="Cancel",
+            font=("Segoe UI", 10),
+            bg=COLORS["btn_cancel"],
+            fg=COLORS["text"],
+            activebackground="#6b7280",
+            activeforeground=COLORS["text"],
+            relief=tk.FLAT,
+            padx=16, pady=6,
+            cursor="hand2",
             command=self._on_cancel,
-            width=12,
-            bg="#e0e0e0",
-        ).pack(side=tk.RIGHT, padx=(5, 0))
+        )
+        cancel_btn.pack(side=tk.LEFT)
 
-        tk.Button(
-            btn_frame,
-            text="Apply Selected",
-            command=self._on_apply_selected,
-            width=14,
-            bg="#bbdefb",
-        ).pack(side=tk.RIGHT, padx=(5, 0))
-
-        tk.Button(
-            btn_frame,
+        # Apply All button
+        apply_all_btn = tk.Button(
+            footer,
             text="Apply All",
+            font=("Segoe UI", 10, "bold"),
+            bg=COLORS["btn_primary"],
+            fg="#ffffff",
+            activebackground=COLORS["btn_hover"],
+            activeforeground="#ffffff",
+            relief=tk.FLAT,
+            padx=16, pady=6,
+            cursor="hand2",
             command=self._on_apply_all,
-            width=12,
-            bg="#c8e6c9",
-        ).pack(side=tk.RIGHT, padx=(5, 0))
+        )
+        apply_all_btn.pack(side=tk.RIGHT)
+
+        # Apply Selected button
+        apply_sel_btn = tk.Button(
+            footer,
+            text="Apply Selected",
+            font=("Segoe UI", 10),
+            bg=COLORS["surface"],
+            fg=COLORS["text"],
+            activebackground=COLORS["surface_hover"],
+            activeforeground=COLORS["text"],
+            relief=tk.FLAT,
+            padx=16, pady=6,
+            cursor="hand2",
+            command=self._on_apply_selected,
+        )
+        apply_sel_btn.pack(side=tk.RIGHT, padx=(0, 8))
+
+    # ─── Actions ──────────────────────────────────────────────────────────
 
     def _on_apply_all(self) -> None:
-        """Apply all corrections."""
         self._result = self._corrections[:]
         self._window.destroy()
 
     def _on_apply_selected(self) -> None:
-        """Apply only selected corrections."""
         self._result = [
-            corr
-            for corr, var in zip(self._corrections, self._selected)
+            corr for corr, var in zip(self._corrections, self._selected)
             if var.get()
         ]
         self._window.destroy()
 
     def _on_cancel(self) -> None:
-        """Cancel without applying."""
         self._result = None
         self._window.destroy()
 
 
 def show_review(original_text: str, corrections: list[dict]) -> Optional[list[dict]]:
-    """Show the review window and return selected corrections.
-
-    Convenience function that creates and shows the ReviewWindow.
-
-    Args:
-        original_text: The original text.
-        corrections: List of correction dicts.
-
-    Returns:
-        List of selected corrections, or None if cancelled.
-    """
+    """Show the review window and return selected corrections."""
     window = ReviewWindow(original_text, corrections)
     return window.show()

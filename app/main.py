@@ -823,15 +823,19 @@ class SystemTrayApp:
             from pynput.keyboard import Key, Controller
 
             kb = Controller()
-            # Release any modifier keys that might be held from the hotkey
-            kb.release(Key.ctrl_l)
-            kb.release(Key.alt_l)
-            kb.release(Key.ctrl_r)
-            kb.release(Key.alt_r)
-            time.sleep(0.05)
+            # Release ALL modifier keys that might be held from the hotkey
+            for key in (Key.ctrl_l, Key.ctrl_r, Key.alt_l, Key.alt_r, Key.shift_l, Key.shift_r):
+                try:
+                    kb.release(key)
+                except Exception:
+                    pass
+            # Wait for keys to fully release before sending Ctrl+C
+            time.sleep(0.2)
             # Send Ctrl+C
             with kb.pressed(Key.ctrl_l):
                 kb.tap('c')
+            # Wait for clipboard to update
+            time.sleep(0.1)
         except Exception as e:
             logger.debug(f"Simulate copy failed: {e}")
 
