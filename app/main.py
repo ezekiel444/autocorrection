@@ -628,7 +628,6 @@ class SystemTrayApp:
                     "Auto-Correction Tool Ready",
                     "Hotkeys active:\n"
                     "• Ctrl+Alt+C (auto-correct)\n"
-                    "• Ctrl+Alt+A (auto-apply)\n"
                     "• Ctrl+Alt+R (review before applying)"
                 )
 
@@ -655,14 +654,13 @@ class SystemTrayApp:
                 "Auto-Correction Tool Ready (Headless)",
                 "Hotkeys active:\n"
                 "• Ctrl+Alt+C (auto-correct)\n"
-                "• Ctrl+Alt+A (auto-apply)\n"
                 "• Ctrl+Alt+R (review before applying)"
             )
 
         logger.info("Running in headless mode (no system tray)")
         print(
             "Auto-Correction Tool running. "
-            "Press Ctrl+Alt+C to analyze, Ctrl+Alt+A to auto-apply, "
+            "Press Ctrl+Alt+C to correct, "
             "Ctrl+Alt+R to review. Press Ctrl+C to quit.",
             file=sys.stderr,
         )
