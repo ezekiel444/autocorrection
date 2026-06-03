@@ -24,7 +24,7 @@ class ReviewWindow:
         """Show the review window and block until user acts."""
         self._window = tk.Tk()
         self._window.title("Review Corrections")
-        self._window.geometry("720x540")
+        self._window.geometry("800x580")
         self._window.configure(bg=COLORS["bg"])
         self._window.attributes("-topmost", True)
         self._window.resizable(True, True)
@@ -36,8 +36,8 @@ class ReviewWindow:
 
     def _center(self):
         self._window.update_idletasks()
-        x = (self._window.winfo_screenwidth() // 2) - (720 // 2)
-        y = (self._window.winfo_screenheight() // 2) - (540 // 2)
+        x = (self._window.winfo_screenwidth() // 2) - (800 // 2)
+        y = (self._window.winfo_screenheight() // 2) - (580 // 2)
         self._window.geometry(f"+{x}+{y}")
 
     def _build_ui(self) -> None:
@@ -74,7 +74,7 @@ class ReviewWindow:
         scroll_inner = tk.Frame(canvas, bg=COLORS["bg"])
         scroll_inner.bind("<Configure>",
                           lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-        canvas.create_window((0, 0), window=scroll_inner, anchor="nw", width=650)
+        canvas.create_window((0, 0), window=scroll_inner, anchor="nw", width=730)
         canvas.configure(yscrollcommand=scrollbar.set)
         canvas.bind_all("<MouseWheel>",
                         lambda e: canvas.yview_scroll(int(-1 * (e.delta / 120)), "units"))
@@ -87,15 +87,15 @@ class ReviewWindow:
             var = tk.BooleanVar(value=True)
             self._selected.append(var)
 
-            card = tk.Frame(scroll_inner, bg=COLORS["surface"], padx=16, pady=14)
+            card = tk.Frame(scroll_inner, bg=COLORS["surface"], padx=16, pady=12)
             card.pack(fill=tk.X, pady=4, padx=2)
 
-            # Top: checkbox + original -> suggested
-            top = tk.Frame(card, bg=COLORS["surface"])
-            top.pack(fill=tk.X)
+            # Row 1: checkbox + correction summary
+            row1 = tk.Frame(card, bg=COLORS["surface"])
+            row1.pack(fill=tk.X)
 
             cb = tk.Checkbutton(
-                top, variable=var, bg=COLORS["surface"],
+                row1, variable=var, bg=COLORS["surface"],
                 fg=COLORS["text_bright"], activebackground=COLORS["surface"],
                 activeforeground=COLORS["text_bright"],
                 selectcolor="#2563eb",
@@ -103,35 +103,37 @@ class ReviewWindow:
                 highlightthickness=0, bd=1,
                 font=("Segoe UI", 12),
             )
-            cb.pack(side=tk.LEFT, padx=(0, 12))
+            cb.pack(side=tk.LEFT, anchor="n", padx=(0, 10), pady=(2, 0))
+
+            # Text content (stacked vertically, wraps properly)
+            text_frame = tk.Frame(row1, bg=COLORS["surface"])
+            text_frame.pack(side=tk.LEFT, fill=tk.X, expand=True)
 
             original = corr.get("original_text", "")
             suggested = corr.get("suggested_text", "")
 
-            # Original (red)
-            tk.Label(
-                top, text=self._truncate(original, 45),
+            # Original text (red) — wrapping label
+            orig_label = tk.Label(
+                text_frame, text=original,
                 font=FONTS["code"], fg=COLORS["error"], bg=COLORS["surface"],
-            ).pack(side=tk.LEFT)
+                anchor="w", justify=tk.LEFT, wraplength=550,
+            )
+            orig_label.pack(fill=tk.X)
 
-            # Arrow
-            tk.Label(
-                top, text="  ->  ",
-                font=FONTS["body"], fg=COLORS["text_dim"], bg=COLORS["surface"],
-            ).pack(side=tk.LEFT)
-
-            # Suggested (green)
-            tk.Label(
-                top, text=self._truncate(suggested, 45),
+            # Arrow + suggested (green) — wrapping label
+            sugg_label = tk.Label(
+                text_frame, text=f"-> {suggested}",
                 font=FONTS["code_bold"], fg=COLORS["success"], bg=COLORS["surface"],
-            ).pack(side=tk.LEFT)
+                anchor="w", justify=tk.LEFT, wraplength=550,
+            )
+            sugg_label.pack(fill=tk.X, pady=(2, 0))
 
-            # Bottom: type + reason
+            # Bottom: type + reason (also wrapping)
             reason = corr.get("reason", "")
             ctype = corr.get("correction_type", "")
             if reason or ctype:
-                bottom = tk.Frame(card, bg=COLORS["surface"])
-                bottom.pack(fill=tk.X, padx=(36, 0), pady=(6, 0))
+                bottom = tk.Frame(text_frame, bg=COLORS["surface"])
+                bottom.pack(fill=tk.X, pady=(6, 0))
 
                 if ctype:
                     tk.Label(
@@ -144,8 +146,9 @@ class ReviewWindow:
                     tk.Label(
                         bottom, text=reason,
                         font=FONTS["small"], fg=COLORS["text_dim"],
-                        bg=COLORS["surface"],
-                    ).pack(side=tk.LEFT)
+                        bg=COLORS["surface"], wraplength=500,
+                        anchor="w", justify=tk.LEFT,
+                    ).pack(side=tk.LEFT, fill=tk.X, expand=True)
 
         # Divider
         tk.Frame(w, bg=COLORS["border"], height=1).pack(fill=tk.X)
